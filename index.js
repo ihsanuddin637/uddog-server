@@ -27,12 +27,13 @@ async function run() {
     const dataCollections = client.db("uddogDB").collection("uddog");
     const userCollections = client.db("uddogDB").collection("user");
 
+     // Event data Get request
     app.get("/event-Data", async (req, res) => {
       const cursor = dataCollections.find();
       const result = await cursor.toArray();
       res.send(result);
     });
-
+ // Event data get request by upcoming date
     app.get("/event-Data/upcoming", async (req, res) => {
       const today = new Date();
       const yyyy = today.getFullYear();
@@ -46,6 +47,7 @@ async function run() {
       res.send(result);
     });
 
+// Event data get request by id
     app.get("/event-Data/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -53,6 +55,7 @@ async function run() {
       res.send(result);
     });
 
+// Event data get request by email
     app.get("/users/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
@@ -60,12 +63,14 @@ async function run() {
       res.send(result);
     });
 
+     // Event data post request
     app.post("/event-Data", async (req, res) => {
       const eventData = req.body;
       const result = await dataCollections.insertOne(eventData);
       res.send(result);
     });
 
+    // User data post request
     app.post("/users", async (req, res) => {
       const userData = req.body;
       const result = await userCollections.insertOne(userData);
