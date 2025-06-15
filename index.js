@@ -81,7 +81,11 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const options = { upsert: true };
-
+      const updatedData = req.body;
+      const updateDoc = {
+        $set: updatedData,
+      };
+      const result = await dataCollection.updateOne(query, updateDoc, options);
       res.send(result);
     });
 
