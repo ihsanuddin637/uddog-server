@@ -1,9 +1,15 @@
 const express = require("express");
 var cors = require("cors");
 const app = express();
-const port = process.env.PORT || 3000;
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
+const port = process.env.PORT || 3000;
+const admin = require("firebase-admin");
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString(
+  "utf8"
+);
+const serviceAccount = JSON.parse(decoded);
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
 
 app.use(cors());
 app.use(express.json());
@@ -19,10 +25,36 @@ const client = new MongoClient(uri, {
   },
 });
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const verifyFirebaseToken = async (req, res, next) => {
+  const authHeaders = req.headers?.authorization;
+
+  if (!authHeaders || !authHeaders.startsWith("Bearer ")) {
+    return res.status(401).send({ message: "Unauthorized Access" });
+  }
+  const token = authHeaders.split(" ")[1];
+  try {
+    const decode = await admin.auth().verifyIdToken(token);
+    req.decode = decode;
+    next();
+  } catch (error) {
+    return res.status(401).send({ message: "Unauthorized Access" });
+  }
+};
+
+const verifyTokenEmail = async (req, res, next) => {
+  if (req.params.email !== req.decode.email) {
+    return res.status(403).send({ message: "Forbidden Access" });
+  }
+  next();
+};
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
 
     const dataCollections = client.db("uddogDB").collection("uddog");
     const userCollections = client.db("uddogDB").collection("user");
@@ -55,15 +87,20 @@ async function run() {
     });
 
     // Event data get request by email
-    app.get("/users/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const result = await dataCollections.find(query).toArray();
-      res.send(result);
-    });
+    app.get(
+      "/users/:email",
+      verifyFirebaseToken,
+      verifyTokenEmail,
+      async (req, res) => {
+        const email = req.params.email;
+        const query = { email: email };
+        const result = await dataCollections.find(query).toArray();
+        res.send(result);
+      }
+    );
 
     // Join User data Get request
-    app.get("/join-user", async (req, res) => {
+    app.get("/join-user", verifyFirebaseToken, async (req, res) => {
       const today = new Date();
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -111,7 +148,7 @@ async function run() {
     });
 
     // Delete request
-    app.delete("/event-Data/:id", async (req, res) => {
+    app.delete("/event-Data/:id", verifyFirebaseToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await dataCollections.deleteOne(query);
@@ -119,7 +156,7 @@ async function run() {
     });
   } finally {
     // Ensures that the client will close when you finish/error
-    // await client.close();
+  
   }
 }
 run().catch(console.dir);
