@@ -30,4 +30,4 @@
   [https://uddog.netlify.app/](https://uddog.netlify.app/)
 
 - ### 🧱 **Scalability & Maintainability**
-  Designed with reusable components, modular structure, and clean code practices — making it easy to scale features and maintain the codebase over time.
+  Designed with reusable components, modular structure, and clean code practices — making it easy to scale features and maintain the codebase over time..
