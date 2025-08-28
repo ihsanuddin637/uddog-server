@@ -10,7 +10,6 @@ const decoded = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString(
 const serviceAccount = JSON.parse(decoded);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
-
 app.use(cors());
 app.use(express.json());
 
@@ -100,15 +99,18 @@ async function run() {
     );
 
     // Join User data Get request
-    app.get("/join-user", verifyFirebaseToken, async (req, res) => {
+    app.get("/join-user/:email", verifyFirebaseToken, async (req, res) => {
+      const email = req.params.email;
       const today = new Date();
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, "0");
       const dd = String(today.getDate()).padStart(2, "0");
       const todayStr = `${mm}/${dd}/${yyyy}`;
-      const cursor = joinUserCollections
-        .find({ date: { $gte: todayStr } })
-        .sort({ date: -1 }); // Sort by date field ascending
+      const query = {
+        email: email,
+        date: { $gte: todayStr },
+      };
+      const cursor = joinUserCollections.find(query).sort({ date: -1 });
       const result = await cursor.toArray();
       res.send(result);
     });
@@ -156,7 +158,6 @@ async function run() {
     });
   } finally {
     // Ensures that the client will close when you finish/error
-  
   }
 }
 run().catch(console.dir);
